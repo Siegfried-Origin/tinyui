@@ -17,11 +17,12 @@ else ()
     )
 endif()
 
+configure_file(src/config.h.in config.h @ONLY)
 add_library(tinyui ${TINYUI_SOURCES})
 target_link_libraries(tinyui PUBLIC imgui)
 target_include_directories(tinyui PUBLIC include)
 target_include_directories(tinyui PRIVATE ../3rdparty) # TODO: move config.h.in
-target_include_directories(tinyui PRIVATE ${CMAKE_BINARY_DIR})
+target_include_directories(tinyui PRIVATE ${CMAKE_BINARY_DIR}/lib)
 target_compile_definitions(tinyui PRIVATE UNICODE _UNICODE)
 
 if (USE_SDL)
