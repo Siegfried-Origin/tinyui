@@ -14,7 +14,7 @@ public:
 
     virtual ~DX11Adapter();
 
-    void initDevice(Window* window);
+    void initDevice(Window* window, DXGI_SWAP_EFFECT swapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL);
 
     void startNewFrame();
     void renderFrame();

@@ -34,6 +34,9 @@ protected:
         const std::filesystem::path& config,
         uint32_t width = 640,
         uint32_t height = 700
+#ifndef USE_VUKAN
+        , DXGI_SWAP_EFFECT swapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL
+#endif
     );
 public:
     virtual ~Window();
@@ -74,8 +77,6 @@ public:
     void createVkSurfaceKHR(
         VkInstance instance,
         VkSurfaceKHR* surface, int* width, int* height) const;
-#else
-    virtual DXGI_SWAP_EFFECT preferedSwapEffect() const { return DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL; }
 #endif
 
 #ifdef USE_SDL

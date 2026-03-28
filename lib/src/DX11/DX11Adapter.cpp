@@ -26,7 +26,7 @@ DX11Adapter::~DX11Adapter()
 }
 
 
-void DX11Adapter::initDevice(Window* window)
+void DX11Adapter::initDevice(Window* window, DXGI_SWAP_EFFECT swapEffect)
 {
 
     HWND hwnd;
@@ -51,7 +51,7 @@ void DX11Adapter::initDevice(Window* window)
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
-    sd.SwapEffect = window->preferedSwapEffect();
+    sd.SwapEffect = swapEffect;
 
     UINT createDeviceFlags = 0;
     //createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;

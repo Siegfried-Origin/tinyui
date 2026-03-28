@@ -20,7 +20,11 @@ WindowOverlay::WindowOverlay(
     const std::string& title,
     const std::filesystem::path& config,
     const std::wstring& processName)
-    : Window(sys, title, config)
+#ifdef USE_VULKAN
+    : Window(sys, title, config, 0, 0)
+#else
+    : Window(sys, title, config, 0, 0, DXGI_SWAP_EFFECT_SEQUENTIAL)
+#endif
 {
     // TODO: find a cleaner solution than global vars
     // Already hooked once

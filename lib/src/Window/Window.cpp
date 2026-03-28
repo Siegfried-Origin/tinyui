@@ -24,7 +24,11 @@ Window::Window(
     WindowSystem* sys,
     const std::string& title,
     const std::filesystem::path& config,
-    uint32_t width, uint32_t height)
+    uint32_t width, uint32_t height
+#ifndef USE_VUKAN
+    , DXGI_SWAP_EFFECT swapEffect
+#endif
+)
     : _gpuAdapter(sys)
     , _sys(sys)
     , _configPath(config)
@@ -97,7 +101,11 @@ Window::Window(
     ::UpdateWindow(_hwnd);
 #endif
 
+#ifdef USE_VULKAN
     _gpuAdapter.initDevice(this);
+#else
+    _gpuAdapter.initDevice(this, swapEffect);
+#endif
     _gpuInitialized = true;
 
     IMGUI_CHECKVERSION();
