@@ -436,9 +436,9 @@ void Window::refreshResize()
 {
     if (!_gpuInitialized) { return; }
 
+#ifdef USE_VULKAN
     ImGui::SetCurrentContext(_imGuiContext);
 
-#ifdef USE_VULKAN
     if (_imGuiInitialized) {
         ImGui_ImplVulkan_Shutdown();
     }

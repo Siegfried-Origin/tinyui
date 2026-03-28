@@ -23,6 +23,11 @@ public:
     float windowButtonWidth() const { return _buttonWidth; }
     bool borderless() const { return _borderless; }
 
+#ifndef USE_VULKAN
+    // We need the non flip version to get transparency
+    virtual DXGI_SWAP_EFFECT preferedSwapEffect() const { return DXGI_SWAP_EFFECT_SEQUENTIAL; }
+#endif
+
 protected:
     float _titlebarHeight = 32.f;
     float _buttonWidth = 55.f;

@@ -54,6 +54,7 @@ public:
     bool minimized() const { return _minimized; }
     float mainScale() const { return _mainScale; }
     const char* title() const;
+    ImGuiContext* getImGuiContext() { return _imGuiContext; }
 
     void openFileDialog(
         const std::string& title,
@@ -73,6 +74,8 @@ public:
     void createVkSurfaceKHR(
         VkInstance instance,
         VkSurfaceKHR* surface, int* width, int* height) const;
+#else
+    virtual DXGI_SWAP_EFFECT preferedSwapEffect() const { return DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL; }
 #endif
 
 #ifdef USE_SDL

@@ -13,7 +13,7 @@
 // TODO: Temporary
 HWND g_overlayWnd = NULL;
 HWND g_targetWnd = NULL;
-
+WindowOverlay* g_overlay = nullptr;
 
 WindowOverlay::WindowOverlay(
     WindowSystem* sys,
@@ -29,6 +29,7 @@ WindowOverlay::WindowOverlay(
     }
 
     g_overlayWnd = _hwnd;
+    g_overlay = this;
 
     // Global hook
     HWINEVENTHOOK hook = SetWinEventHook(
@@ -43,21 +44,33 @@ WindowOverlay::WindowOverlay(
         throw std::runtime_error("SetWinEventHook failed");
     }
 
-    LONG_PTR exStyle = WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_LAYERED;
+    LONG_PTR exStyle =
+        WS_EX_TOPMOST |         // Overlay
+        WS_EX_TRANSPARENT |     // No click registered
+        WS_EX_NOACTIVATE |      // No mouse catch
+        WS_EX_TOOLWINDOW |      // No taskbar icon
+        WS_EX_LAYERED;
     //LONG_PTR exStyle = WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED;
-    SetWindowLongPtr(_hwnd, GWL_EXSTYLE, exStyle);
-
     LONG_PTR styleWin = WS_POPUP;
+
+    SetWindowLongPtr(_hwnd, GWL_EXSTYLE, exStyle);
     SetWindowLongPtr(_hwnd, GWL_STYLE, styleWin);
+
+    //SetWindowPos(_hwnd, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
 
     SetLayeredWindowAttributes(_hwnd, 0, 255, LWA_ALPHA);
     const MARGINS margin = { -1, 0, 0, 0 };
     DwmExtendFrameIntoClientArea(_hwnd, &margin);
 
-    SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0,
-        SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+    SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 
-    ::UpdateWindow(_hwnd);
+    // Enable activation / deactivation of overlay focus with Pause / Break key
+    RegisterHotKey(
+        _hwnd,
+        1,                  // ID
+        0,                  // modifiers (CTRL, ALT, etc)
+        VK_PAUSE            // touche Pause/Break
+    );
 
     setShown(_shown);
 
@@ -72,13 +85,17 @@ WindowOverlay::~WindowOverlay()
     if (_processWatcher.joinable()) {
         _processWatcher.join();
     }
+
+    g_overlayWnd = NULL;
+    g_targetWnd = NULL;
+    g_overlay = NULL;
 }
 
 
 void WindowOverlay::setShown(bool shown)
 {
     _shown = shown;
-    ::ShowWindow(_hwnd, active() ? SW_SHOW : SW_MINIMIZE);
+    ::ShowWindow(_hwnd, active() ? SW_SHOW : SW_HIDE);
     ::UpdateWindow(_hwnd);
 }
 
@@ -92,9 +109,7 @@ void WindowOverlay::startOverlay(DWORD pid)
 
         positionOverlayOnTarget();
         _active = true;
-
-        ::ShowWindow(_hwnd, active() ? SW_SHOW : SW_MINIMIZE);
-        ::UpdateWindow(_hwnd);
+        setShown(_shown);
     }
 }
 
@@ -134,8 +149,74 @@ void WindowOverlay::processWatch(const std::wstring& processName)
 }
 
 
+void WindowOverlay::toggleClickThrough()
+{
+    if (!_shown || !_active) return;
+
+    _focused = !_focused;
+
+    LONG_PTR ex = GetWindowLongPtr(_hwnd, GWL_EXSTYLE);
+
+    bool transparent = (ex & WS_EX_TRANSPARENT) != 0;
+    
+    LONG_PTR exStyle;
+
+    if (_focused) {
+        exStyle =
+            WS_EX_TOPMOST |         // Overlay
+            //WS_EX_TRANSPARENT |     // No click registered
+            //WS_EX_NOACTIVATE |      // No mouse catch
+            WS_EX_TOOLWINDOW |      // No taskbar icon
+            WS_EX_LAYERED;
+        ::SetFocus(_hwnd);
+        ::BringWindowToTop(_hwnd);
+    }
+    else {
+        exStyle =
+            WS_EX_TOPMOST |         // Overlay
+            WS_EX_TRANSPARENT |     // No click registered
+            WS_EX_NOACTIVATE |      // No mouse catch
+            WS_EX_TOOLWINDOW |      // No taskbar icon
+            WS_EX_LAYERED;
+        //::SetFocus(g_targetWnd);
+        ::BringWindowToTop(g_targetWnd);
+    }
+
+    SetWindowLongPtr(_hwnd, GWL_EXSTYLE, exStyle);
+
+    SetWindowPos(_hwnd, NULL, 0, 0, 0, 0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED
+    );
+}
+
+
+void WindowOverlay::beginFrame() {
+    Window::beginFrame();
+
+    if (_focused) {
+        ImGui::GetBackgroundDrawList()->AddRectFilled(
+            ImVec2(0, 0),
+            ImGui::GetIO().DisplaySize,
+            IM_COL32(0, 0, 0, 128)
+        );
+    }
+}
+
+
 LRESULT WindowOverlay::w32WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    // Switch between game / overlay
+    if (msg == WM_HOTKEY) {
+        if (wParam == 1) {
+            toggleClickThrough();
+            return 0;
+        }
+    }
+
+    //if (GetAsyncKeyState(VK_PAUSE) & 0x1) {
+    //    toggleClickThrough();
+    //}
+
     return ::DefWindowProcW(_hwnd, msg, wParam, lParam);
 }
 
@@ -205,9 +286,17 @@ void WindowOverlay::positionOverlayOnTarget() {
 
     RECT r;
     if (GetWindowRect(g_targetWnd, &r)) {
-        SetWindowPos(g_overlayWnd, HWND_TOPMOST,
-            r.left, r.top, r.right - r.left, r.bottom - r.top,
-            SWP_NOACTIVATE | SWP_SHOWWINDOW);
+        const uint32_t width = r.right - r.left;
+        const uint32_t height = r.bottom - r.top;
+
+        ShowWindow(g_overlayWnd, SW_RESTORE);
+
+        SetWindowPos(
+            g_overlayWnd, HWND_TOPMOST,
+            r.left, r.top,
+            width, height,
+            SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_FRAMECHANGED
+        );
     }
 }
 

@@ -31,6 +31,10 @@ public:
 
     void processWatch(const std::wstring& processName);
 
+    void toggleClickThrough();
+
+    virtual void beginFrame();
+
 protected:
     static void CALLBACK w32WinEventProc(HWINEVENTHOOK, DWORD event, HWND hwnd, LONG, LONG, DWORD, DWORD);
     virtual LRESULT w32WndProc(UINT msg, WPARAM wParam, LPARAM lParam);
@@ -44,6 +48,7 @@ private:
     std::wstring _className;
     bool _active = false;
     bool _shown = true;
+    bool _focused = false;
 
     std::thread _processWatcher;
     std::atomic<bool> _stopWatch = false;
