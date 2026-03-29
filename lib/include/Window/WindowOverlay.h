@@ -22,7 +22,8 @@ public:
 
     virtual ~WindowOverlay();
 
-    bool active() { return _active && _shown; }
+    bool active() const { return _active && _shown; }
+    bool focused() const { return _focused; }
 
     void setShown(bool shown);
 
