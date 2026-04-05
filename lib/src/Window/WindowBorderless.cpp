@@ -1,5 +1,4 @@
 #include <Window/WindowBorderless.h>
-#ifndef USE_VULKAN
 
 #ifdef USE_SDL
     #include <backends/imgui_impl_sdl3.h>
@@ -309,6 +308,4 @@ LRESULT WindowBorderless::w32HitTest(POINT cursor) const
     }
 }
 
-
 #endif
-#endif // not USE_VULKAN
