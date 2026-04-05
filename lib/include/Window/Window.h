@@ -34,7 +34,7 @@ protected:
         const std::filesystem::path& config,
         uint32_t width = 640,
         uint32_t height = 700
-#ifndef USE_VUKAN
+#ifndef USE_VULKAN
         , DXGI_SWAP_EFFECT swapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL
 #endif
     );
@@ -133,7 +133,7 @@ protected:
         const char* filter,
         bool multiSelect
     ) const;
-    
+
     std::string w32SaveFileName(
         const char* title,
         const char* initialDir,

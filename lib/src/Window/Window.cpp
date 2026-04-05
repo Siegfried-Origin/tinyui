@@ -25,7 +25,7 @@ Window::Window(
     const std::string& title,
     const std::filesystem::path& config,
     uint32_t width, uint32_t height
-#ifndef USE_VUKAN
+#ifndef USE_VULKAN
     , DXGI_SWAP_EFFECT swapEffect
 #endif
 )

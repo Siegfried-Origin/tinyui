@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef USE_VULKAN
+
 #include <Window/Window.h>
 
 
@@ -48,3 +50,4 @@ protected:
     LRESULT w32HitTest(POINT cursor) const;
 #endif
 };
+#endif // not USE_VULKAN
